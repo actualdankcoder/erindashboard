@@ -17,6 +17,12 @@ async def login():
 async def callback():
     code=request.args.get("code")
     tok=OAuthBridge.getaccesstoken(code)
-    return jsonify(OAuthBridge.getuser(tok["access_token"]))
+    user=OAuthBridge.getuser(tok["access_token"])
+    return f"""
+    <img src='{user.avatar_url()}'/>
+    <br/>
+    {user.name}#{user.discriminator}
+    
+    """
 if __name__ == "__main__":
     app.run()
