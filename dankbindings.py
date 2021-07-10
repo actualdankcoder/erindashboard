@@ -46,7 +46,18 @@ class OAuth:
         token = requests.post(self.discord_token_url,
                               data=data, headers=headers)
         return token.json()
-
+    def refreshtoken(self, refresh_token):
+        data = {
+            'client_id': self.client_id,
+            'client_secret': self.client_secret,
+            'grant_type': 'refresh_token',
+            'refresh_token': refresh_token
+        }
+        headers = {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+        r = requests.post('%s/oauth2/token' % self.discord_api_url, data=data, headers=headers)
+        return r.json()
 
     def getuser(self, accesstoken):
         # Fetch user using an access token
@@ -112,3 +123,10 @@ class Guild:
         return f"{self.name}"
     def icon_url(self, size=256):
         return f"https://cdn.discordapp.com/icons/{self.id}/{self.icon_hash}.png?size={size}"
+
+class TokenSession:
+    # planned to be an implementation of encrypted flask sessions 
+    # but stored server side and they'll be used for
+    # making calls to the discord API
+    pass
+    
