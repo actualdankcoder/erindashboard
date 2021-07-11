@@ -1,6 +1,7 @@
-import requests
+#import requests
 import os
 import discord
+import aiohttp
 from urllib.parse import quote
 from dotenv import load_dotenv
 load_dotenv() 
@@ -19,7 +20,9 @@ class OAuth:
         self.discord_token_url =self.oauth_base+"/token"
         self.discord_api_url = "https://discord.com/api"
         self.bot_invite_url = self.generate_bot_invite_url()
-
+        self.client=None
+    async def create_client(self):
+        self.client = aiohttp.ClientSession()
     def generate_login_url(self):
         # Generate a login url, used during authorization
         return self.oauth_base+"/authorize?client_id={}&redirect_uri={}&response_type=code&scope={}".format(
@@ -30,7 +33,7 @@ class OAuth:
         return self.oauth_base+"/authorize?client_id={}&permissions=0&redirect_uri={}&scope=bot".format(
         self.client_id, quote(self.redirect_uri))    
 
-    def getaccesstoken(self, code):
+    async def getaccesstoken(self, code):
         # Get a user access token required to make api calls with discord
         data = {
             'client_id': self.client_id,
@@ -43,10 +46,10 @@ class OAuth:
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded'
         }
-        token = requests.post(self.discord_token_url,
+        token = await self.client.post(self.discord_token_url,
                               data=data, headers=headers)
-        return token.json()
-    def refreshtoken(self, refresh_token):
+        return await token.json()
+    async def refreshtoken(self, refresh_token):
         data = {
             'client_id': self.client_id,
             'client_secret': self.client_secret,
@@ -56,17 +59,17 @@ class OAuth:
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded'
         }
-        r = requests.post('%s/oauth2/token' % self.discord_api_url, data=data, headers=headers)
-        return r.json()
+        r = await self.client.post('%s/oauth2/token' % self.discord_api_url, data=data, headers=headers)
+        return await r.json()
 
-    def getuser(self, accesstoken):
+    async def getuser(self, accesstoken):
         # Fetch user using an access token
         url = self.discord_api_url+"/users/@me"
         headers = {
             'Authorization': 'Bearer {}'.format(accesstoken)
         }
-        payload = requests.get(url, headers=headers)
-        data=payload.json()
+        payload = await self.client.get(url, headers=headers)
+        data=await payload.json()
         user=User(
             name=data["username"],
             userid=data["id"],
@@ -74,14 +77,14 @@ class OAuth:
             avatar=data["avatar"]
         )
         return user
-    def getuserguilds(self, accesstoken):
+    async def getuserguilds(self, accesstoken):
         # Fetch user guilds using an access token
         url = self.discord_api_url+"/users/@me/guilds"
         headers = {
             'Authorization': 'Bearer {}'.format(accesstoken)
         }
-        payload = requests.get(url, headers=headers)
-        data=payload.json()
+        payload = await self.client.get(url, headers=headers)
+        data=await payload.json()
         guilds=[
             Guild(
                 name=i["name"],
@@ -129,4 +132,3 @@ class TokenSession:
     # but stored server side and they'll be used for
     # making calls to the discord API
     pass
-    

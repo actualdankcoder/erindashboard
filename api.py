@@ -8,7 +8,9 @@ app = Quart(__name__)
 app.secret_key = os.getenv("SECRETKEY").encode("utf-8")
 
 OAuthBridge=dankbindings.OAuth()
-
+@app.before_serving
+async def set_client():
+    await OAuthBridge.create_client()
 @app.route("/login/")
 async def login():
     return redirect(OAuthBridge.discord_login_url)
@@ -16,8 +18,9 @@ async def login():
 @app.route("/callback/")
 async def callback():
     code=request.args.get("code")
-    tok=OAuthBridge.getaccesstoken(code)
-    user=OAuthBridge.getuser(tok["access_token"])
+    tok=await OAuthBridge.getaccesstoken(code)
+    print(tok)
+    user=await OAuthBridge.getuser(tok["access_token"])
     return f"""
     <img src='{user.avatar_url()}'/>
     <br/>
